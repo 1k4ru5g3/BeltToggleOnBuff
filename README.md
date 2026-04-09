@@ -1,19 +1,36 @@
-# ExamplePlugin - Standalone Distribution
+# ExamplePlugin — POE2Fixer Plugin SDK Example
 
-Self-contained buildable plugin for POE2Fixer. No dependency on the POE2Fixer host source tree.
+A reference plugin demonstrating all features of the POE2Fixer Plugin SDK (v5). Use this as a starting point for building your own plugins.
 
-## Requirements
+## What It Does
 
-- Visual Studio 2022 with MSVC v143 toolset
-- Windows SDK 10.0
-- C++20
+ExamplePlugin provides interactive demo tabs that showcase every SDK capability. When enabled in POE2Fixer, it adds a settings panel with the following example tabs:
+
+### Buff Inspector
+Displays the player's active buffs in real-time. Shows buff name, remaining time, charges, flask slot, and effectiveness. Includes text filtering and color-coded progress bars for buff duration.
+
+### Entity Explorer
+Lists all game entities (monsters, NPCs, chests, players, items) with their type, rarity, and nearby zone classification. Supports the entity watch mechanism — select any entity to inspect its full component data (Life, Render, Positioned, Targetable, Animated, Stats, Actor, Buffs) in a detailed tree view.
+
+### Inventory Inspector
+Accesses the ServerData debug interface to browse player inventories. Displays inventory slot grids with item details: base type, unique name, rarity, item level, mods (implicit, explicit, enchant, hellscape), identified/corrupted status, and stack sizes.
+
+### Memory Viewer
+Demonstrates direct game memory reading through the SDK. Includes a hex dump viewer at arbitrary addresses, typed `Read<T>` examples, pattern scan address resolution, and StdVector/StdList/StdMap container reading.
+
+### UI Explorer
+Navigates the game's full UI element tree. Shows element properties (position, size, flags, type, scale, StringId, text content), recursive parent chain, and child traversal. Includes search by StringId and visual highlighting of selected elements on screen.
+
+### Component Reader (SDK v5)
+Demonstrates the new SDK v5 Component Reader API and UI Element API. Reads Life, Render, and Mods components directly from entity addresses without hardcoded offsets. Shows UI tree navigation using `GetUiChildren`, `ReadUiElement`, and `ComputeUiScreenRect`. Demonstrates convenience helpers like `GetHealthPercent`, `IsAlive`, `GetPlayerNameHelper`.
 
 ## Build
 
-Open `ExamplePlugin.sln` in Visual Studio 2022 and build **Release | x64**.
+**Requirements:** Visual Studio 2022 (MSVC v143), Windows SDK 10.0, C++20
+
+Open `ExamplePlugin.sln` in Visual Studio and build **Release | x64**.
 
 Or from command line:
-
 ```
 "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" ExamplePlugin.sln -p:Configuration=Release -p:Platform=x64
 ```
@@ -22,13 +39,21 @@ Output: `bin\Release\ExamplePlugin.dll`
 
 ## Install
 
-Copy `ExamplePlugin.dll` to `Plugins/ExamplePlugin/` in your POE2Fixer installation directory, then enable it in the Plugins tab.
+Copy `ExamplePlugin.dll` to `Plugins/ExamplePlugin/` in your POE2Fixer directory, then enable it in the Plugins tab.
 
-## Structure
+## Project Structure
 
 ```
 sdk/            Plugin SDK headers (PluginAPI.h, PluginContext.h, PluginGameData.h, PluginHelpers.h)
 imgui/          ImGui library (headers + sources, compiled into the DLL)
-examples/       Example tab implementations (Buffs, Entities, Inventory, Memory, UI Explorer)
-ExamplePlugin.cpp   Main plugin entry point
+examples/       Example tab implementations
+ExamplePlugin.cpp   Main plugin entry point — routes to example tabs
 ```
+
+## Creating Your Own Plugin
+
+1. Copy this project as a template
+2. Rename the .sln, .vcxproj, and main .cpp
+3. Implement the `IPlugin` interface (see `ExamplePlugin.cpp`)
+4. Use `PluginContext` function pointers to access game data
+5. Build and copy the DLL to `Plugins/YourPlugin/`
