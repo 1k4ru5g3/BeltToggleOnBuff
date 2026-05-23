@@ -177,6 +177,8 @@ inline void DrawActorComp(const PluginSDK::Actor& a,
                     ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
                     ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 220.0f);
                     ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+
+                    // Existing fields
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn(); ImGui::Text("Use Stage");
                     ImGui::TableNextColumn(); ImGui::Text("%d", skill.UseStage);
@@ -189,11 +191,57 @@ inline void DrawActorComp(const PluginSDK::Actor& a,
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn(); ImGui::Text("Cooldown Time (ms)");
                     ImGui::TableNextColumn(); ImGui::Text("%d", skill.TotalCooldownMs);
+
+                    // New cooldown fields
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Max Uses");
+                    ImGui::TableNextColumn(); ImGui::Text("%d", skill.MaxUses);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Active Cooldowns");
+                    ImGui::TableNextColumn(); ImGui::Text("%d", skill.TotalActiveCooldowns);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Remaining Uses");
+                    ImGui::TableNextColumn();
+                    if (skill.MaxUses > 0) {
+                        int remaining = skill.MaxUses - skill.TotalActiveCooldowns;
+                        if (remaining < 0) remaining = 0;
+                        ImGui::Text("%d / %d", remaining, skill.MaxUses);
+                    } else {
+                        ImGui::TextDisabled("(no cooldown)");
+                    }
+
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn(); ImGui::Text("Can Be Used");
                     ImGui::TableNextColumn();
                     ImGui::TextColored(skill.CanBeUsed ? ImVec4(0.3f,1,0.3f,1) : ImVec4(1,0.3f,0.3f,1),
                                        skill.CanBeUsed ? "true" : "false");
+
+                    // Equipment subtree
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Gem Name Hash");
+                    ImGui::TableNextColumn(); ImGui::Text("0x%08X", skill.Equipment.GemNameHash);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Inventory Slot");
+                    ImGui::TableNextColumn(); ImGui::Text("%d", skill.Equipment.InventorySlot);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Socket Index");
+                    ImGui::TableNextColumn(); ImGui::Text("%d", skill.Equipment.SocketIndex);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Link Index");
+                    ImGui::TableNextColumn(); ImGui::Text("%d", skill.Equipment.LinkIndex);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Can Be On Player Item");
+                    ImGui::TableNextColumn(); ImGui::Text("%s", skill.Equipment.CanBeOnPlayerItem ? "true" : "false");
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn(); ImGui::Text("Unknown Flag");
+                    ImGui::TableNextColumn(); ImGui::Text("%d", skill.Equipment.UnknownFlag);
+
+                    // DAT pointers — click any row to copy to clipboard for Memory.Read use.
+                    DrawAddressRow("GrantedEffectsPerLevel",      skill.GrantedEffectsPerLevelAddr);
+                    DrawAddressRow("ActiveSkillsDat",             skill.ActiveSkillsDatAddr);
+                    DrawAddressRow("GrantedEffectStatSetsPerLvl", skill.GrantedEffectStatSetsPerLevelAddr);
+                    DrawAddressRow("SkillDetailsAddr (raw)",      skill.SkillDetailsAddr);
+
                     ImGui::EndTable();
                 }
                 ImGui::TreePop();
