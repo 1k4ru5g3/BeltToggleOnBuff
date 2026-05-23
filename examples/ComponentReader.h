@@ -133,20 +133,37 @@ inline void ShowComponentReaderDemo(const PluginSDK::Context* ctx,
                     explicitCount = static_cast<int>(modList.ExplicitMods.size());
                 }
 
+                // Item names — both auto-resolve WorldItem containers (Task 4),
+                // so passing the container address directly works.
+                std::string baseTypeName = ctx->Inventory.ReadItemBaseTypeName(entity.Address);
+                std::string uniqueName   = ctx->Inventory.ReadItemUniqueName(entity.Address);
+
                 ImVec4 colour =
                     rarity == 1 ? ImVec4(0.55f, 0.65f, 1.00f, 1.0f)  // magic
                   : rarity == 2 ? ImVec4(1.00f, 0.95f, 0.45f, 1.0f)  // rare
                   : rarity == 3 ? ImVec4(1.00f, 0.60f, 0.20f, 1.0f)  // unique
                   :               ImVec4(0.95f, 0.95f, 0.95f, 1.0f); // normal
                 ImGui::PushStyleColor(ImGuiCol_Text, colour);
-                ImGui::Text(
-                    "id=%u  iLvl=%d  rarity=%d  ident=%s  corr=%s  +%d/%dM  %s",
+                // Line 1: rarity-coloured display name.
+                //   Unique items get "Unique Name (Base Type)".
+                //   Non-uniques just show the base type name.
+                //   Fallback to truncated metadata path if names are empty
+                //   (e.g. very early mid-spawn before names are streamed in).
+                if (!uniqueName.empty()) {
+                    ImGui::Text("%s (%s)", uniqueName.c_str(), baseTypeName.c_str());
+                } else if (!baseTypeName.empty()) {
+                    ImGui::TextUnformatted(baseTypeName.c_str());
+                } else {
+                    ImGui::TextUnformatted(shortPath.c_str());
+                }
+                ImGui::PopStyleColor();
+                // Line 2: indented diagnostic row (uncoloured).
+                ImGui::TextDisabled(
+                    "    id=%u  iLvl=%d  rarity=%d  ident=%s  corr=%s  +%d/%dM",
                     entity.Id, itemLevel, rarity,
                     isIdentified ? "y" : "n",
                     isCorrupted  ? "y" : "n",
-                    implicitCount, explicitCount,
-                    shortPath.c_str());
-                ImGui::PopStyleColor();
+                    implicitCount, explicitCount);
 
                 if (++shown >= 20) {
                     ImGui::TextDisabled("... %d more items", total - shown);
