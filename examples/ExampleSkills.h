@@ -44,6 +44,17 @@ struct SkillsTabState {
     uint64_t     buffs_fingerprint = 0;
     uint64_t     prev_buffs_fingerprint = 0;
     int          dat_inspect_skill_index = -1;              // for DAT Inspector
+
+    // Generic Idle→non-Idle→Idle cycle tracker (latches the most recent
+    // non-Idle duration; shown next to "Current Anim:" once the cycle ends).
+    // Independent from the per-skill `timings` map above — those use Calibrate
+    // / cooldown-delta attribution, while this one is a raw single-shot timer.
+    int         auto_prev_anim_id      = -1;
+    std::string auto_prev_anim_name;        // name of the animation observed last frame (for attribution)
+    bool        auto_measuring         = false;
+    double      auto_start_ms          = 0.0;
+    float       auto_last_duration_ms  = 0.0f;
+    std::string auto_last_anim_name;        // name of the most recent measured animation
 };
 
 inline double NowMs() {
@@ -213,7 +224,38 @@ inline void DrawSkillsPanel(const PluginSDK::Context* ctx,
             t.last_cooldown_seen = s.TotalActiveCooldowns;
         }
 
-        ImGui::Text("Current Anim Id: 0x%X (%s)", actor.AnimationId, is_action ? "action" : "idle/run/etc");
+        // Idle→non-Idle→Idle auto-timer (Idle id == 0). Latches duration AND
+        // name on return to Idle. The previous-frame name is shadowed in
+        // `auto_prev_anim_name` because `actor.AnimationName` at the moment
+        // we detect the transition already refers to "Idle" — by then the
+        // animation we wanted to attribute is gone from the live snapshot.
+        {
+            const int curId = actor.AnimationId;
+            if (state.auto_prev_anim_id == -1) {
+                state.auto_prev_anim_id = curId;
+            } else if (state.auto_prev_anim_id == 0 && curId != 0) {
+                state.auto_measuring = true;
+                state.auto_start_ms  = now_ms;
+            } else if (state.auto_prev_anim_id != 0 && curId == 0 && state.auto_measuring) {
+                state.auto_last_duration_ms = static_cast<float>(now_ms - state.auto_start_ms);
+                state.auto_last_anim_name   = state.auto_prev_anim_name;
+                state.auto_measuring        = false;
+            }
+            state.auto_prev_anim_id   = curId;
+            state.auto_prev_anim_name = actor.AnimationName;
+        }
+
+        if (state.auto_last_duration_ms > 0.0f) {
+            ImGui::Text("Current Anim: %s (0x%X)%s — last: %.0f ms (%s)",
+                        actor.AnimationName.c_str(), actor.AnimationId,
+                        is_action ? " — action" : " — idle/run/etc",
+                        state.auto_last_duration_ms,
+                        state.auto_last_anim_name.c_str());
+        } else {
+            ImGui::Text("Current Anim: %s (0x%X)%s",
+                        actor.AnimationName.c_str(), actor.AnimationId,
+                        is_action ? " — action" : " — idle/run/etc");
+        }
         ImGui::Spacing();
 
         if (ImGui::BeginTable("SamplerT", 6, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
