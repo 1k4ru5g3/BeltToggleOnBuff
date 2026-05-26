@@ -182,7 +182,7 @@ public:
 
     void SaveSettings() override {
         namespace fs = std::filesystem;
-        fs::path dir = fs::path(Directory()) / "config";
+        fs::path dir = DirectoryPath() / "config";
         std::error_code ec;
         fs::create_directories(dir, ec);
         std::ofstream file(dir / "settings.txt");
@@ -274,7 +274,7 @@ private:
 
     void LoadSettings() {
         namespace fs = std::filesystem;
-        fs::path settingsPath = fs::path(Directory()) / "config" / "settings.txt";
+        fs::path settingsPath = DirectoryPath() / "config" / "settings.txt";
         if (!fs::exists(settingsPath)) return;
 
         std::ifstream file(settingsPath);
