@@ -34,7 +34,7 @@ inline void DrawBuffsPanel(const PluginSDK::Context* ctx,
     static char buffFilter[64] = "";
     ImGui::InputText("Filter##buffFilter", buffFilter, sizeof(buffFilter));
 
-    if (ImGui::BeginTable("BuffTable", 5,
+    if (ImGui::BeginTable("BuffTable", 6,
         ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
         ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_ScrollY |
         ImGuiTableFlags_Sortable | ImGuiTableFlags_Resizable,
@@ -43,6 +43,7 @@ inline void DrawBuffsPanel(const PluginSDK::Context* ctx,
         ImGui::TableSetupColumn("Time Left", ImGuiTableColumnFlags_WidthFixed, 80);
         ImGui::TableSetupColumn("Total Time", ImGuiTableColumnFlags_WidthFixed, 80);
         ImGui::TableSetupColumn("Charges", ImGuiTableColumnFlags_WidthFixed, 60);
+        ImGui::TableSetupColumn("Source Entity Id", ImGuiTableColumnFlags_WidthFixed, 110);
         ImGui::TableSetupColumn("Progress", ImGuiTableColumnFlags_WidthFixed, 100);
         ImGui::TableHeadersRow();
 
@@ -81,6 +82,12 @@ inline void DrawBuffsPanel(const PluginSDK::Context* ctx,
                 ImGui::Text("%d", b.Charges);
             else
                 ImGui::TextDisabled("0");
+
+            ImGui::TableNextColumn();
+            if (b.SourceEntityId != 0)
+                ImGui::Text("%u", b.SourceEntityId);
+            else
+                ImGui::TextDisabled("--");
 
             ImGui::TableNextColumn();
             if (b.TotalTime > 0 && b.TimeLeft > 0) {
