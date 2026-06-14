@@ -1,65 +1,165 @@
-# ExamplePlugin — POE2Fixer Plugin SDK Example
+# Belt Toggle On Buff
 
-A reference plugin demonstrating all features of the POE2Fixer Plugin SDK (v6). Use this as a starting point for building your own plugins.
+A POE2Fixer SDK v6 plugin that automatically toggles the player's belt when a tracked Walker monster dies.
 
-## What It Does
+The plugin is intended for setups where a temporary stolen monster modifier, such as **Shade Walker** or **Shroud Walker**, should trigger an automatic belt unequip/equip sequence.
 
-ExamplePlugin provides interactive demo tabs that showcase every SDK capability. When enabled in POE2Fixer, it adds a settings panel with the following example tabs:
+## What it does
 
-### Buff Inspector
-Displays the player's active buffs in real-time. Shows buff name, remaining time, charges, flask slot, and effectiveness. Includes text filtering and color-coded progress bars for buff duration.
+The plugin watches nearby rare or unique monsters for specific Walker-related monster modifiers. When a tracked monster changes from alive to dead, the plugin assumes that the stolen modifier has been applied to the player and starts the configured belt toggle sequence.
 
-### Entity Explorer
-Lists all game entities (monsters, NPCs, chests, players, items) with their type, rarity, and nearby zone classification. Supports the entity watch mechanism — select any entity to inspect its full component data (Life, Render, Positioned, Targetable, Animated, Stats, Actor, Buffs) in a detailed tree view.
+The sequence can:
 
-### Inventory Inspector
-Accesses the ServerData debug interface to browse player inventories. Displays inventory slot grids with item details: base type, unique name, rarity, item level, mods (implicit, explicit, enchant, hellscape), identified/corrupted status, and stack sizes.
+* save the current mouse position
+* optionally block human mouse/keyboard input while running
+* open the inventory
+* click the configured belt slot
+* close the inventory
+* restore the original mouse position
 
-### Memory Viewer
-Demonstrates direct game memory reading through the SDK. Includes a hex dump viewer at arbitrary addresses, typed `Read<T>` examples, pattern scan address resolution, and StdVector/StdList/StdMap container reading.
+A manual F6 test hotkey is also available.
 
-### UI Explorer
-Navigates the game's full UI element tree. Shows element properties (position, size, flags, type, scale, StringId, text content), recursive parent chain, and child traversal. Includes search by StringId and visual highlighting of selected elements on screen.
+## Detection method
 
-### Component Reader (SDK v6)
-Demonstrates the SDK v6 Component Reader API and UI Element API. Exercises all 22 component readers, 4 enumerators, and 10 convenience helpers directly from entity addresses without hardcoded offsets. Shows UI tree navigation using `GetUiChildren`, `ReadUiElement`, and `ComputeUiScreenRect`. Demonstrates helpers like `GetHealthPercent`, `IsAlive`, `GetPlayerName`, `GetItemRarity`, `IsItemIdentified`, `GetStackCount`.
+This version does **not** rely on scanning the player's `stolen_mods_buff` memory structure.
 
-### Render, Terrain, Events, Log tabs
-Exercise the remaining service surface: WorldToScreen + map projection, walkable/height grid + TgtLocation enumeration, OnFrame/OnAreaChange/OnGameAttached/OnGameDetached event hooks with live counters, and Log.Debug/Info/Warn/Error fire buttons.
+Instead, it tracks monsters directly:
 
-### SDK Coverage Summary
-The settings tab shows a `SDK Coverage: N/10 services responding` banner above the tab bar. Hover for per-service status (Game, Entities, Components, Inventory, Ui, Render, Terrain, Memory, Log, Events).
+1. Scan nearby monsters from the game snapshot.
+2. Check rare/unique monsters for Walker-related monster mods.
+3. Track matching monsters while they are alive.
+4. Trigger the belt sequence when a tracked monster dies.
 
-## Build
+This approach is designed to avoid expensive player-buff deep scans and should be more reliable for modifiers such as:
 
-**Requirements:** Visual Studio 2022 (MSVC v143), Windows SDK 10.0, C++20
+* Shade Walker
+* Shroud Walker
+* MonsterShadeWalker
+* MonsterShroudWalker
 
-Open `ExamplePlugin.sln` in Visual Studio and build **Release | x64**.
+## Recommended settings
 
-Or from command line:
-```
-"C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" ExamplePlugin.sln -p:Configuration=Release -p:Platform=x64
-```
-
-Output: `bin\Release\ExamplePlugin.dll`
-
-## Install
-
-Copy `ExamplePlugin.dll` to `Plugins/ExamplePlugin/` in your POE2Fixer directory, then enable it in the Plugins tab.
-
-## Project Structure
-
-```
-sdk/            Plugin SDK headers (PluginAbi.h, PluginSDK.h)
-imgui/          ImGui library (headers + sources, compiled into the DLL)
-examples/       Example tab implementations
-ExamplePlugin.cpp   Main plugin entry point — routes to example tabs
+```text
+Enable automatic trigger by outer buff = on
+Trigger on Walker monster death = on
+Only rare/unique monsters = on
+Check monster OMP mods = on
+Check monster buffs = off
+Trigger if tracked Walker disappears = off
+Monster scan interval ms = 200
+Max monster scan distance = 8000
+Walker keyword A = Shroud Walker
+Walker keyword B = Shade Walker
+Cooldown ms = 5000
 ```
 
-## Creating Your Own Plugin
+Start with `Check monster buffs` disabled. Monster OMP/mod detection should usually be enough and is expected to be cheaper than scanning monster buffs.
 
-1. Copy this project as a template
-2. Rename the .sln, .vcxproj, and main .cpp
-3. Subclass `PluginSDK::Plugin` and override the lifecycle hooks (see `ExamplePlugin.cpp`)
-4. Use `ctx()->Service.Method(...)` to access game data (Game, Entities, Components, Inventory, Ui, Render, Terrain, Memory, Log, Events)
-5. Build and copy the DLL to `Plugins/YourPlugin/`
+## Belt position
+
+The plugin can either use automatic Belt1 detection or a manually configured belt coordinate.
+
+To set a manual coordinate:
+
+1. Move the mouse over the belt slot.
+2. Click **Set manual belt coordinate from current mouse**.
+3. Disable automatic belt detection if needed.
+
+If automatic belt detection works correctly, leaving it enabled is recommended.
+
+## Test mode
+
+The plugin includes an optional F6 test hotkey.
+
+When enabled, pressing F6 starts the belt toggle sequence manually. This is useful for verifying that the belt position, inventory timing, and input blocking behave correctly before enabling automatic detection.
+
+## Safety options
+
+The plugin includes several safety-related settings:
+
+```text
+Do not run in town/hideout
+Require game window foreground
+Block human input while running
+Cooldown ms
+```
+
+`Require game window foreground` prevents the sequence from running while Path of Exile 2 is not the active window.
+
+`Block human input while running` can help prevent accidental mouse movement or key presses from interfering with the belt toggle sequence.
+
+## Troubleshooting
+
+### The plugin does not trigger
+
+Check the following:
+
+* `Enable automatic trigger by outer buff` is enabled.
+* `Trigger on Walker monster death` is enabled.
+* `Check monster OMP mods` is enabled.
+* The target monster is rare or unique.
+* The monster is within the configured scan distance.
+* The Walker keywords match the actual monster mod names.
+
+Try increasing:
+
+```text
+Max monster scan distance = 12000
+```
+
+If it still does not detect anything, enable:
+
+```text
+Check monster buffs = on
+```
+
+for testing.
+
+### The plugin triggers too often
+
+Increase the cooldown:
+
+```text
+Cooldown ms = 8000
+```
+
+Also keep this disabled unless needed:
+
+```text
+Trigger if tracked Walker disappears = off
+```
+
+The disappear fallback can be useful in some cases, but it may cause false positives if monsters leave the snapshot without dying.
+
+### The overlay lags
+
+Use the monster-death based version instead of player-buff deep scan versions.
+
+Recommended performance settings:
+
+```text
+Check monster OMP mods = on
+Check monster buffs = off
+Monster scan interval ms = 200
+Max monster scan distance = 8000
+```
+
+If needed, increase:
+
+```text
+Monster scan interval ms = 500
+```
+
+## Build requirements
+
+* Visual Studio 2022
+* Release | x64
+* C++20
+* POE2Fixer SDK v6
+* `PLUGIN_EXPORTS` defined
+
+## Notes
+
+This plugin is experimental and depends on POE2Fixer SDK structures remaining compatible with the current game version. Game updates may require adjustments to entity, component, or monster modifier handling.
+
+Use at your own risk.
